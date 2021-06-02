@@ -8,11 +8,12 @@ use App\Http\Resources\PersonaResource;
 use App\Http\Requests\PersonaRequest;
 use Illuminate\Http\Response;
 use Illuminate\Database\QueryException;
+
 class PersonaController extends Controller
 {
     public function index()
     {
-        $personas = Persona::query()->orderByDesc('id')->paginate(5);
+        $personas = Persona::query()->orderBy('id','desc')->paginate(5);
         return PersonaResource::collection($personas, Response::HTTP_OK);
     }
 
@@ -37,37 +38,41 @@ class PersonaController extends Controller
         }           
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Persona  $persona
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Persona $persona)
+    public function show($id)
     {
-        //
+        $persona= Persona::findOrFail((int) $id);
+        return response()->json([
+            'persona'=> new PersonaResource($persona)
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Persona  $persona
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Persona $persona)
+    public function update(PersonaRequest $request, $id)
     {
-        //
+        try {
+            $persona = Persona::findOrFail((int) $id);
+            $persona->nombre = $request->nombre;
+            $persona->apellidoPaterno = $request->apellidoPaterno;
+            $persona->apellidoMaterno = $request->apellidoMaterno;
+            $persona->ci = $request->ci;
+            $persona->sexo = $request->sexo;
+            $persona->save();
+            return response()->json([
+                'mensaje' => 'El regitro persona se actualizo exitosamente',
+                'persona' => new PersonaResource($persona)
+            ], Response::HTTP_OK);
+        } catch (QueryException $e) {
+            response()->json([
+                'mensaje' => 'Error al actualizar, consulte con el Administrador' . $e
+            ], Response::HTTP_FORBIDDEN);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Persona  $persona
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Persona $persona)
+    public function destroy($id)
     {
-        //
+        $persona= Persona::findOrFail((int) $id);
+        $persona->delete();
+        return response()->json([
+            'mensaje'=>'El registro fue eliminado'
+        ], Response::HTTP_OK);
     }
 }
